@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #EFEAE1;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(35,35,35,0.05) 1px, transparent 0);
+  background-size: 22px 22px;
+  color: #232323;
+}
+
+/* The signature element: a rotated rubber-stamp badge for lifecycle status.
+   Meant to look physically stamped onto the index card, not a flat pill. */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.6rem;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  mix-blend-mode: multiply;
+  user-select: none;
+}
+
+.stamp-draft { color: #8B8378; }
+.stamp-published { color: #2B3A55; }
+.stamp-verified { color: #4B6B4A; }
+.stamp-needs_review { color: #B2842E; }
+.stamp-archived { color: #B23A2E; transform: rotate(3deg); }
+
+.card {
+  background: #F8F5EE;
+  border: 1px solid #C9C0AE;
+  box-shadow: 2px 3px 0 rgba(35,35,35,0.08);
+}
+
+.input {
+  background: #F8F5EE;
+  border: 1px solid #C9C0AE;
+  padding: 0.55rem 0.75rem;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: #232323;
+}
+.input:focus {
+  outline: 2px solid #2B3A55;
+  outline-offset: 1px;
+}
