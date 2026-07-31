@@ -7,10 +7,28 @@ pipeline {
 
     stages {
 
+        stage('Debug Git') {
+            steps {
+                sh '''
+                echo "=== CURRENT DIR ==="
+                pwd
+
+                echo "=== FILES ==="
+                ls -la
+
+                echo "=== GIT REMOTE ==="
+                git remote -v || true
+
+                echo "=== DOCKERFILE ==="
+                cat Dockerfile
+                '''
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                docker build --no-cache -t ${IMAGE_NAME}:${BUILD_NUMBER} .
                 '''
             }
         }
