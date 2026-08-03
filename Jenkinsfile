@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "ghcr.io/tsirynajoro/fixbook-front"
+        VITE_API_URL = "http://YOUR_SERVER_ADDRESS:BACKEND_HOST_PORT"
     }
 
     stages {
@@ -28,7 +29,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build --no-cache -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                docker build --no-cache -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                  --build-arg VITE_API_URL=${VITE_API_URL} \
+                  .
                 '''
             }
         }
