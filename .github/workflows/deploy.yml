@@ -20,7 +20,7 @@ jobs:
 
           echo "Deployment of fixbook-front, tag : $TAG"
 
-          curl -X POST http://localhost:5678/webhook/deploy \
+          curl -X POST http://localhost:5678/webhook/deploy-fixbook \
             -H "Content-Type: application/json" \
             -d "{\"service\":\"front\",\"tag\":\"$TAG\"}"
 
