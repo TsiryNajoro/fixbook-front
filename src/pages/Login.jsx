@@ -103,7 +103,7 @@ export default function Login() {
             </span>
           )}
 
-          {providers.microsoft ? (
+          {/* {providers.microsoft ? (
             <a href={api.microsoftUrl()} className={oauthButtonClasses(true)}>
               <MicrosoftIcon /> Continue with Microsoft
             </a>
@@ -111,7 +111,7 @@ export default function Login() {
             <span title="Not configured on this server yet" className={oauthButtonClasses(false)}>
               <MicrosoftIcon /> Continue with Microsoft
             </span>
-          )}
+          )} */}
         </div>
       </div>
 
