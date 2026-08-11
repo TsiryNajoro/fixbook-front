@@ -17,9 +17,9 @@ jobs:
       - name: Send webhook to n8n
         run: |
           TAG="${{ github.event.registry_package.package_version.container_metadata.tag.name }}"
-          REPOSITORY="ghcr.io/${{ github.repository }}-2TMV"
-          IMAGE="${REPOSITORY}:${TAG}"
           SERVICE="2tmv"
+          REPOSITORY="ghcr.io/tsirynajoro/fixbook-front"
+          IMAGE="${REPOSITORY}:${TAG}"
 
           echo "Deployment image: $IMAGE"
           echo "Repository: $REPOSITORY"
@@ -31,4 +31,3 @@ jobs:
             -d "{\"service\":\"$SERVICE\",\"image\":\"$IMAGE\",\"repository\":\"$REPOSITORY\",\"tag\":\"$TAG\"}"
 
           echo "Webhook sent to n8n"
-
