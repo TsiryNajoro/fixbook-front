@@ -1,4 +1,3 @@
-```yaml
 name: Trigger n8n Deployment for fixbook-front
 
 on:
@@ -29,4 +28,4 @@ jobs:
             -d "{\"image\":\"$IMAGE\",\"repository\":\"$REPOSITORY\"}"
 
           echo "Webhook sent to n8n"
-```
+
