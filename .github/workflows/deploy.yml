@@ -1,11 +1,11 @@
-name: Trigger n8n Deployment for fixbook-front
+name: Trigger n8n Deployment for fixbook-front-2tmv
 
 on:
   registry_package:
     types: [published]
 
 concurrency:
-  group: deploy-fixbook-front
+  group: deploy-fixbook-front-2tmv
   cancel-in-progress: false
 
 jobs:
@@ -17,15 +17,18 @@ jobs:
       - name: Send webhook to n8n
         run: |
           TAG="${{ github.event.registry_package.package_version.container_metadata.tag.name }}"
-          REPOSITORY="ghcr.io/${{ github.repository }}"
+          REPOSITORY="ghcr.io/${{ github.repository }}-2TMV"
           IMAGE="${REPOSITORY}:${TAG}"
+          SERVICE="2tmv"
 
           echo "Deployment image: $IMAGE"
           echo "Repository: $REPOSITORY"
+          echo "Service: $SERVICE"
+          echo "Tag: $TAG"
 
           curl -X POST http://localhost:5678/webhook/deploy-fixbook \
             -H "Content-Type: application/json" \
-            -d "{\"image\":\"$IMAGE\",\"repository\":\"$REPOSITORY\"}"
+            -d "{\"service\":\"$SERVICE\",\"image\":\"$IMAGE\",\"repository\":\"$REPOSITORY\",\"tag\":\"$TAG\"}"
 
           echo "Webhook sent to n8n"
 
