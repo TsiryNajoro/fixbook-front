@@ -56,8 +56,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build --provenance=false --no-cache \
-                -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} \
                 --build-arg VITE_API_URL=${VITE_API_URL} \
                 .
                 '''
