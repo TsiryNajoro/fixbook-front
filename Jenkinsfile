@@ -63,6 +63,21 @@ pipeline {
             }
         }
 
+        stage('Trivy Scan') {
+            steps {
+                sh '''
+                docker run --rm \
+                -v trivy-cache:/root/.cache/trivy \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy:latest \
+                image \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                ${IMAGE_NAME}:${BUILD_NUMBER}
+                '''
+            }
+        }
+
         stage('Publish Docker Image') {
             steps {
                 withCredentials([
