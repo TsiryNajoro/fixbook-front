@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "ghcr.io/tsirynajoro/fixbook-front"
-        VITE_API_URL = "http://localhost:5000" //edit for real address  
+        VITE_API_URL = "" //edit for real address  
     }
 
     stages {
