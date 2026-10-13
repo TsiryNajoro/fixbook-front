@@ -51,3 +51,5 @@ export const api = {
   markNotificationRead: (token, id) => request(`/notifications/${id}/read`, { method: 'PATCH', token }),
   markAllNotificationsRead: (token) => request('/notifications/read-all', { method: 'PATCH', token }),
 };
+
+// CD automation smoke test.
