@@ -56,7 +56,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                docker build \
+                -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                -t ${IMAGE_NAME}:1.0.${BUILD_NUMBER} \
                 --build-arg VITE_API_URL=${VITE_API_URL} \
                 .
                 '''
@@ -91,6 +93,7 @@ pipeline {
                     echo $GH_TOKEN | docker login ghcr.io -u $GH_USER --password-stdin
 
                     docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                    docker push ${IMAGE_NAME}:1.0.${BUILD_NUMBER}
 
                     docker logout ghcr.io
                     '''
