@@ -15,7 +15,9 @@ RUN npm run build
 
 FROM nginx:alpine
 
-RUN apk update && apk upgrade --no-cache && apk add --no-cache 'tiff>=4.7.2-r0'
+RUN apk update \
+    && apk upgrade --available --no-cache \
+    && apk add --no-cache 'tiff>=4.7.2-r0'
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
