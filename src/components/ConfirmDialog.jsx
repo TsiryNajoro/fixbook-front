@@ -17,7 +17,15 @@ import { AlertTriangle, X } from 'lucide-react';
  *   />
  *
  * For a prompt-style dialog (text input), pass `withInput` and read the
- * value back from onConfirm(value).
+ * value back from onConfirm(value). Only one input is supported for now.
+ *   <ConfirmDialog
+ *     open={dialog?.type === 'rename-entry'}
+ *     title="Rename this entry"
+ *     withInput
+ *     inputPlaceholder="New name"
+ *     onConfirm={(value) => ...}
+ *     onCancel={() => setDialog(null)}
+ *   />
  */
 export default function ConfirmDialog({
   open,
