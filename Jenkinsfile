@@ -242,7 +242,7 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'github-token',
+                        credentialsId: 'ghcr-token',
                         usernameVariable: 'GH_USER',
                         passwordVariable: 'GH_TOKEN'
                     )
