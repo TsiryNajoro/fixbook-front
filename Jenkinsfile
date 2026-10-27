@@ -98,7 +98,7 @@ pipeline {
 
                         echo output
 
-                        def match = (output =~ /The next release version is ([0-9]+\\.[0-9]+\\.[0-9]+)/)
+                        def match = (output =~ /The next release version is (\d+\.\d+\.\d+)/)
 
                         if (match.find()) {
                             env.RELEASE_VERSION = "v${match.group(1)}"
