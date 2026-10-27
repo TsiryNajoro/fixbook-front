@@ -98,9 +98,7 @@ pipeline {
 
                         echo output
 
-                        def match = (
-                            output =~ /The next release version is ([0-9]+\\.[0-9]+\\.[0-9]+)/
-                        )
+                        def match = (output =~ /Skip v([0-9]+\.[0-9]+\.[0-9]+) tag creation in dry-run mode/)
 
                         if (match.find()) {
                             env.RELEASE_VERSION = "v${match.group(1)}"
