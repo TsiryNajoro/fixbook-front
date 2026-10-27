@@ -249,6 +249,7 @@ pipeline {
                 ]) {
                     sh '''
                         docker run --rm \
+                            -e CI=true
                             -e GH_TOKEN="$GH_TOKEN" \
                             -e GH_USER="$GH_USER" \
                             -e GIT_COMMIT="$GIT_COMMIT" \
