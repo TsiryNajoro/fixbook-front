@@ -91,21 +91,23 @@ pipeline {
 
                                         trap "git config --local --unset-all http.https://github.com/.extraheader || true" EXIT
 
-                                        npx semantic-release --dry-run
+                                        npx semantic-release --dry-run 2>&1
                                     '
                             '''
                         ).trim()
 
                         echo output
 
-                        def match = (output =~ /Skip v([0-9]+\.[0-9]+\.[0-9]+) tag creation in dry-run mode/)
+                        def match = (output =~ /The next release version is ([0-9]+\\.[0-9]+\\.[0-9]+)/)
 
                         if (match.find()) {
                             env.RELEASE_VERSION = "v${match.group(1)}"
                             echo "Version retenue : ${env.RELEASE_VERSION}"
-                        } else {
+                        } else if (output.contains('There are no relevant changes, so no new version is released.')) {
                             env.RELEASE_VERSION = ''
                             echo 'Aucune nouvelle version à publier.'
+                        } else {
+                            error('Impossible de déterminer la version. Vérifier les logs Semantic Release.')
                         }
                     }
                 }
