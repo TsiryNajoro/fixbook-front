@@ -1,7 +1,5 @@
 FROM node:24-alpine AS build
 
-RUN apk upgrade --no-cache
-
 WORKDIR /app
 
 COPY package*.json ./
@@ -17,8 +15,7 @@ RUN npm run build
 
 FROM nginx:alpine
 
-RUN apk update \
-    && apk upgrade --available --no-cache \
+RUN apk upgrade --no-cache \
     && apk add --no-cache 'tiff>=4.7.2-r0'
 
 COPY --from=build /app/dist /usr/share/nginx/html
