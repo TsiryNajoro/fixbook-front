@@ -168,7 +168,7 @@ pipeline {
 
             steps {
                 sh '''
-                    docker build \
+                    docker build --pull --no-cache \
                         -t ${IMAGE_NAME}:${RELEASE_VERSION} \
                         --build-arg VITE_API_URL="${VITE_API_URL}" \
                         .
