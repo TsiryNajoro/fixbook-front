@@ -1,6 +1,20 @@
 pipeline {
     agent any
 
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '10'))
+    }
+
+    parameters {
+        booleanParam(
+            name: 'DRY_RUN',
+            defaultValue: false,
+            description: 'Execute scans et build, mais ne publie rien : ni image, ni signature, ni release, ni mise a jour GitOps'
+        )
+    }
+
     environment {
         IMAGE_NAME      = "ghcr.io/tsirynajoro/fixbook-front"
         VITE_API_URL    = ""
@@ -17,9 +31,9 @@ pipeline {
     stages {
 
         stage('Gitleaks Current') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
             steps {
-                // Le volume n'est plus en :ro car Gitleaks doit ecrire son rapport.
-                // --redact : le rapport ne contient jamais les secrets en clair.
                 sh '''
                     rm -rf reports
                     mkdir -p reports
@@ -39,6 +53,8 @@ pipeline {
         }
 
         stage('Gitleaks History') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
             steps {
                 sh '''
                     docker run --rm \
@@ -54,6 +70,8 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
             steps {
                 withSonarQubeEnv('SonarQube') {
                     script {
@@ -76,8 +94,9 @@ pipeline {
         }
 
         stage('Determine Release Version') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
             steps {
-                // Token 2 : acces au repo applicatif (tag + release)
                 withCredentials([
                     string(
                         credentialsId: 'github-release-token',
@@ -123,8 +142,13 @@ pipeline {
                             env.RELEASE_VERSION = "v${match.group(1)}"
                             echo "Version retenue : ${env.RELEASE_VERSION}"
                         } else if (output.contains('There are no relevant changes, so no new version is released.')) {
-                            env.RELEASE_VERSION = ''
-                            echo 'Aucune nouvelle version à publier.'
+                            if (params.DRY_RUN) {
+                                env.RELEASE_VERSION = 'dryrun'
+                                echo 'DRY_RUN : aucune nouvelle version, tag local "dryrun" pour tester build et Trivy.'
+                            } else {
+                                env.RELEASE_VERSION = ''
+                                echo 'Aucune nouvelle version à publier.'
+                            }
                         } else {
                             error('Impossible de déterminer la version. Vérifier les logs Semantic Release.')
                         }
@@ -134,6 +158,8 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            options { timeout(time: 15, unit: 'MINUTES') }
+
             when {
                 expression {
                     return env.RELEASE_VERSION?.trim()
@@ -151,6 +177,8 @@ pipeline {
         }
 
         stage('Trivy Scan') {
+            options { timeout(time: 15, unit: 'MINUTES') }
+
             when {
                 expression {
                     return env.RELEASE_VERSION?.trim()
@@ -158,8 +186,6 @@ pipeline {
             }
 
             steps {
-                // Deux passes : Trivy ne sait pas ecrire un JSON et bloquer le build
-                // avec un affichage lisible en meme temps. Le cache rend la 2e rapide.
                 sh '''
                     # 1) Rapport JSON complet (ne fait jamais echouer le build)
                     docker run --rm \
@@ -188,14 +214,15 @@ pipeline {
         }
 
         stage('Publish Docker Image') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
             when {
                 expression {
-                    return env.RELEASE_VERSION?.trim()
+                    return env.RELEASE_VERSION?.trim() && env.RELEASE_VERSION != 'dryrun' && !params.DRY_RUN
                 }
             }
 
             steps {
-                // Token 1 : GHCR uniquement (write:packages)
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'ghcr-push-token',
@@ -219,9 +246,11 @@ pipeline {
         }
 
         stage('Cosign Sign') {
+            options { timeout(time: 5, unit: 'MINUTES') }
+
             when {
                 expression {
-                    return env.RELEASE_VERSION?.trim()
+                    return env.RELEASE_VERSION?.trim() && env.RELEASE_VERSION != 'dryrun' && !params.DRY_RUN
                 }
             }
 
@@ -235,7 +264,6 @@ pipeline {
                         credentialsId: 'cosign-password',
                         variable: 'COSIGN_PASSWORD'
                     ),
-                    // Token 1 : la signature est aussi poussee sur GHCR
                     usernamePassword(
                         credentialsId: 'ghcr-push-token',
                         usernameVariable: 'GH_USER',
@@ -270,14 +298,15 @@ pipeline {
         }
 
         stage('Create Git Tag and GitHub Release') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
             when {
                 expression {
-                    return env.RELEASE_VERSION?.trim()
+                    return env.RELEASE_VERSION?.trim() && env.RELEASE_VERSION != 'dryrun' && !params.DRY_RUN
                 }
             }
 
             steps {
-                // Token 2 : acces au repo applicatif (tag + release)
                 withCredentials([
                     string(
                         credentialsId: 'github-release-token',
@@ -315,17 +344,16 @@ pipeline {
             }
         }
 
-        // NOUVEAU : placé en dernier, donc on ne demande un déploiement
-        // que si tout le reste (scan, signature, release) a réussi.
         stage('Update GitOps Repo') {
+            options { timeout(time: 5, unit: 'MINUTES') }
+
             when {
                 expression {
-                    return env.RELEASE_VERSION?.trim()
+                    return env.RELEASE_VERSION?.trim() && env.RELEASE_VERSION != 'dryrun' && !params.DRY_RUN
                 }
             }
 
             steps {
-                // Token 3 : repo GitOps uniquement
                 withCredentials([
                     string(
                         credentialsId: 'gitops-update-token',
@@ -370,7 +398,6 @@ pipeline {
 
     post {
         always {
-            // "always" : on veut les rapports surtout quand un scan fait echouer le build
             archiveArtifacts artifacts: 'reports/*.json', allowEmptyArchive: true
         }
         cleanup {
