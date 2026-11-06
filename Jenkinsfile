@@ -63,6 +63,7 @@ pipeline {
         GITOPS_REPO_URL = "https://github.com/tsirynajoro/fixbook-gitops.git"
         GITOPS_APP_FILE = "frontend/kustomization.yaml"
 
+        // A REMPLACER : destinataire des alertes de derive GitOps
         NOTIFY_EMAIL    = "rakotonirinatsirynajoro@gmail.com"
     }
 
@@ -511,6 +512,7 @@ pipeline {
 
                         if (previous == 'none' || previous == current) {
                             env.GITOPS_OK = 'true'
+                            env.GITOPS_RESULT = 'coherent'
                             echo 'GitOps coherent avec la release precedente : mise a jour autorisee.'
                         } else {
                             env.GITOPS_OK = 'false'
@@ -663,29 +665,40 @@ pipeline {
                     script: 'if [ -f reports/trivy.json ]; then grep -o "\\"VulnerabilityID\\"" reports/trivy.json | wc -l; else echo n/a; fi'
                 ).trim()
 
-                def gitops = [
-                    'updated'      : "mis a jour vers ${env.DEPLOY_VERSION}",
-                    'drift'        : 'DERIVE detectee : stage "Update GitOps Repo" SKIPPED, GitOps non modifie',
-                    'check-failed' : 'controle impossible : "Update GitOps Repo" SKIPPED, GitOps non modifie',
-                    'update-failed': 'mise a jour ECHOUEE, GitOps non modifie'
-                ][env.GITOPS_RESULT ?: ''] ?: 'non concerne (pas de mise a jour demandee)'
+                def gitops
+                switch (env.GITOPS_RESULT ?: '') {
+                    case 'updated':
+                        gitops = "Mis à jour effectué (${env.DEPLOY_VERSION})"; break
+                    case 'drift':
+                        gitops = 'Drift de version trouvé : "Update GitOps Repo" SKIPPED, GitOps non modifié'; break
+                    case 'check-failed':
+                        gitops = 'Contrôle impossible : "Update GitOps Repo" SKIPPED, GitOps non modifié'; break
+                    case 'update-failed':
+                        gitops = 'Mise à jour ÉCHOUÉE, GitOps non modifié'; break
+                    case 'coherent':
+                        gitops = params.DRY_RUN ? 'Aucun drift (DRY_RUN : mise à jour non effectuée)' : 'Aucun drift'; break
+                    default:
+                        gitops = 'Aucun drift ni mise à jour (pas de nouvelle version)'
+                }
 
-                def version = env.RELEASE_VERSION?.trim() ? env.RELEASE_VERSION : 'aucune nouvelle version'
+                def version = !env.RELEASE_VERSION?.trim() ? 'aucune nouvelle version' :
+                              (env.RELEASE_VERSION == 'dryrun' ? "aucune nouvelle version (image de test locale : tag 'dryrun')" : env.RELEASE_VERSION)
 
                 def lines = []
                 lines << "Statut : ${result}"
                 lines << "Image : ${env.IMAGE_NAME}"
                 lines << "Version : ${version}"
-                if (params.DRY_RUN) { lines << 'Mode : DRY_RUN (rien n a ete publie)' }
+                if (params.DRY_RUN) { lines << 'Mode : DRY_RUN (rien n\'a été publié)' }
                 if (params.RECONCILE_GITOPS) { lines << 'Mode : RECONCILE_GITOPS' }
-                lines << "SonarQube Quality Gate : ${env.QG_STATUS ?: 'non execute'}"
-                lines << "Trivy : ${vulns == 'n/a' ? 'non execute' : vulns + ' vulnerabilite(s) HIGH/CRITICAL'}"
-                lines << "GitOps : ${gitops}"
+                lines << "SonarQube Quality Gate : ${env.QG_STATUS ?: 'non exécuté'}"
+                lines << "Trivy : ${vulns == 'n/a' ? 'non exécuté' : vulns + ' vulnérabilité(s) HIGH/CRITICAL'}"
+                lines << "Repository GitOps : ${gitops}"
                 if (env.GITOPS_NOTE?.trim()) { lines << "\n${env.GITOPS_NOTE}" }
                 lines << "\nBuild : ${env.BUILD_URL}"
 
-                def drift = (env.GITOPS_RESULT == 'drift') ? ' | derive GitOps' : ''
-                def subject = "[Fixbook] ${env.IMAGE_NAME.tokenize('/').last()} ${version} : ${result}${drift}"
+                def drift = (env.GITOPS_RESULT == 'drift') ? ' | drift GitOps' : ''
+                def shortVersion = env.RELEASE_VERSION?.trim() ? env.RELEASE_VERSION : 'aucune version'
+                def subject = "[Fixbook] ${env.IMAGE_NAME.tokenize('/').last()} ${shortVersion} : ${result}${drift}"
 
                 // Rapports JSON joints seulement s'il y a eu un probleme (vulnerabilites ou echec)
                 def attach = (result != 'SUCCESS') || (vulns != 'n/a' && vulns != '0')
