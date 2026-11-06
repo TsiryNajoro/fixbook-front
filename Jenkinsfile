@@ -63,6 +63,7 @@ pipeline {
         GITOPS_REPO_URL = "https://github.com/tsirynajoro/fixbook-gitops.git"
         GITOPS_APP_FILE = "frontend/kustomization.yaml"
 
+        // A REMPLACER : destinataire des alertes de derive GitOps
         NOTIFY_EMAIL    = "rakotonirinatsirynajoro@gmail.com"
     }
 
@@ -163,7 +164,7 @@ pipeline {
                                     -w "$WORKSPACE" \
                                     ${NODE_IMAGE} \
                                     sh -ec '
-                                        apk add --no-cache git
+                                        for i in 1 2 3; do apk add --no-cache git && break; [ "$i" = 3 ] && exit 1; sleep 5; done
                                         git checkout -B main "$GIT_COMMIT"
                                         npm ci
 
@@ -205,6 +206,9 @@ pipeline {
             }
         }
 
+        // Resolution manuelle d'une derive : coche RECONCILE_GITOPS et relance, aucune release n'est recreee.
+        // GitOps est aligne sur la derniere release, meme s'il etait en avance (retour arriere voulu) :
+        // c'est une decision humaine explicite, tracee dans le commit GitOps (qui, quand, quel build).
         stage('Reconcile GitOps') {
             options { timeout(time: 5, unit: 'MINUTES') }
 
@@ -459,7 +463,7 @@ pipeline {
                             -w "$WORKSPACE" \
                             ${NODE_IMAGE} \
                             sh -ec '
-                                apk add --no-cache git
+                                for i in 1 2 3; do apk add --no-cache git && break; [ "$i" = 3 ] && exit 1; sleep 5; done
                                 git checkout -B main "$GIT_COMMIT"
                                 npm ci
 
@@ -481,6 +485,10 @@ pipeline {
             }
         }
 
+        // Controle : GitOps doit contenir exactement la release PRECEDENTE.
+        // Ce stage ne fait jamais echouer le build : il pose GITOPS_OK = true/false.
+        // Si false, "Update GitOps Repo" est SKIPPED ; le mail recapitulatif de fin de build le signale.
+        // Lecture seule, donc aussi execute en DRY_RUN.
         stage('Check GitOps') {
             options { timeout(time: 5, unit: 'MINUTES') }
 
@@ -583,6 +591,9 @@ pipeline {
             }
         }
 
+        // Place en dernier : on ne demande un deploiement que si scan, signature et release ont reussi.
+        // SKIPPED si le controle n'a pas donne son feu vert (fail-closed). Sert aussi a la reconciliation manuelle.
+        // Un echec ici ne rend pas le build rouge : GitOps reste tel quel, le mail de fin de build le signale.
         stage('Update GitOps Repo') {
             options { timeout(time: 5, unit: 'MINUTES') }
 
