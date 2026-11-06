@@ -63,7 +63,6 @@ pipeline {
         GITOPS_REPO_URL = "https://github.com/tsirynajoro/fixbook-gitops.git"
         GITOPS_APP_FILE = "frontend/kustomization.yaml"
 
-        // A REMPLACER : destinataire des alertes de derive GitOps
         NOTIFY_EMAIL    = "rakotonirinatsirynajoro@gmail.com"
     }
 
@@ -200,90 +199,6 @@ pipeline {
                             }
                         } else {
                             error('Impossible de déterminer la version. Vérifier les logs Semantic Release.')
-                        }
-                    }
-                }
-            }
-        }
-
-        // Resolution manuelle d'une derive : coche RECONCILE_GITOPS et relance, aucune release n'est recreee.
-        // GitOps est aligne sur la derniere release, meme s'il etait en avance (retour arriere voulu) :
-        // c'est une decision humaine explicite, tracee dans le commit GitOps (qui, quand, quel build).
-        stage('Reconcile GitOps') {
-            options { timeout(time: 5, unit: 'MINUTES') }
-
-            when {
-                expression {
-                    return params.RECONCILE_GITOPS && (!env.RELEASE_VERSION?.trim() || env.RELEASE_VERSION == 'dryrun')
-                }
-            }
-
-            steps {
-                withCredentials([
-                    string(credentialsId: 'github-release-token', variable: 'APP_TOKEN'),
-                    string(credentialsId: 'gitops-update-token', variable: 'GITOPS_TOKEN')
-                ]) {
-                    script {
-                        def out = sh(
-                            returnStdout: true,
-                            script: '''
-                                set +x
-
-                                read_tag() { sed -n -E "s/^[[:space:]]*newTag:[[:space:]]*([^[:space:]]+).*/\\1/p"; }
-                                auth() { printf "x-access-token:%s" "$1" | base64 | tr -d "\\n"; }
-
-                                export GIT_CONFIG_COUNT=1
-                                export GIT_CONFIG_KEY_0="http.extraheader"
-
-                                # 1) derniere release du repo applicatif
-                                export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(auth "$APP_TOKEN")"
-                                LATEST=$(git ls-remote --tags --refs "${APP_REPO_URL}" "refs/tags/v*" \
-                                    | sed "s|.*refs/tags/||" \
-                                    | grep -E "^v[0-9]+\\.[0-9]+\\.[0-9]+$" \
-                                    | sort -V | tail -1)
-                                [ -n "$LATEST" ] || { echo "ERREUR : aucune release trouvee sur ${APP_REPO_URL}" >&2; exit 1; }
-
-                                # 2) version actuellement ecrite dans GitOps
-                                export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(auth "$GITOPS_TOKEN")"
-                                rm -rf gitops-repo
-                                git clone -q "${GITOPS_REPO_URL}" gitops-repo >&2
-                                COUNT=$(grep -Ec "^[[:space:]]*newTag:" "gitops-repo/${GITOPS_APP_FILE}" || true)
-                                [ "$COUNT" = "1" ] || { echo "ERREUR : ${COUNT} ligne(s) newTag: dans ${GITOPS_APP_FILE} (une seule attendue)" >&2; exit 1; }
-                                CURRENT=$(read_tag < "gitops-repo/${GITOPS_APP_FILE}")
-
-                                # 3) comparaison : a jour, en retard, ou en avance
-                                if [ "$LATEST" = "$CURRENT" ]; then
-                                    STATE=sync
-                                elif [ "$(printf "%s\\n%s\\n" "$LATEST" "$CURRENT" | sort -V | tail -1)" = "$LATEST" ]; then
-                                    STATE=behind
-                                else
-                                    STATE=ahead
-                                fi
-
-                                echo "LATEST=${LATEST} CURRENT=${CURRENT} STATE=${STATE}"
-                            '''
-                        ).trim()
-
-                        def parts = out.split(' ')
-                        if (parts.size() != 3) {
-                            error("Reconcile : sortie inattendue : ${out}")
-                        }
-                        def latest  = parts[0].replace('LATEST=', '')
-                        def current = parts[1].replace('CURRENT=', '')
-                        def state   = parts[2].replace('STATE=', '')
-
-                        echo "Derniere release : ${latest} | GitOps : ${current} | etat : ${state}"
-
-                        if (state == 'sync') {
-                            echo 'GitOps est deja a jour, rien a rattraper.'
-                        } else if (params.DRY_RUN) {
-                            echo "DRY_RUN : GitOps serait aligne de ${current} vers ${latest}."
-                        } else {
-                            env.DEPLOY_VERSION = latest
-                            if (state == 'ahead') {
-                                echo "ATTENTION : GitOps (${current}) est en avance sur la derniere release (${latest}) ; il sera ramene a ${latest}."
-                            }
-                            echo "Reconciliation : GitOps sera aligne de ${current} vers ${latest}."
                         }
                     }
                 }
@@ -489,12 +404,14 @@ pipeline {
         // Ce stage ne fait jamais echouer le build : il pose GITOPS_OK = true/false.
         // Si false, "Update GitOps Repo" est SKIPPED ; le mail recapitulatif de fin de build le signale.
         // Lecture seule, donc aussi execute en DRY_RUN.
+        // Avec RECONCILE_GITOPS (decision humaine explicite) : pas de blocage, GitOps est aligne sur la
+        // derniere release (ou sur la nouvelle si ce build en cree une), sans recreer de release.
         stage('Check GitOps') {
             options { timeout(time: 5, unit: 'MINUTES') }
 
             when {
                 expression {
-                    return env.DEPLOY_VERSION?.trim() && env.DEPLOY_VERSION != 'dryrun' && !params.RECONCILE_GITOPS
+                    return (env.DEPLOY_VERSION?.trim() && env.DEPLOY_VERSION != 'dryrun') || params.RECONCILE_GITOPS
                 }
             }
 
@@ -574,6 +491,24 @@ pipeline {
 
                         echo "Release precedente : ${previous} | GitOps : ${current} | derniere modif GitOps : ${lastChange}"
 
+                        if (params.RECONCILE_GITOPS) {
+                            // Sans nouvelle release dans ce build, "precedente" = derniere release existante
+                            def target = (env.DEPLOY_VERSION?.trim() && env.DEPLOY_VERSION != 'dryrun') ? env.DEPLOY_VERSION : previous
+                            if (target == 'none') {
+                                env.GITOPS_OK = 'false'
+                                env.GITOPS_RESULT = 'check-failed'
+                                env.GITOPS_NOTE = 'Reconciliation impossible : aucune release trouvee.'
+                                echo env.GITOPS_NOTE
+                            } else if (params.DRY_RUN) {
+                                echo "DRY_RUN : GitOps serait aligne de ${current} vers ${target}."
+                            } else {
+                                env.DEPLOY_VERSION = target
+                                env.GITOPS_OK = 'true'
+                                echo "Reconciliation : GitOps sera aligne de ${current} vers ${target}."
+                            }
+                            return
+                        }
+
                         if (previous == 'none' || previous == current) {
                             env.GITOPS_OK = 'true'
                             echo 'GitOps coherent avec la release precedente : mise a jour autorisee.'
@@ -600,7 +535,7 @@ pipeline {
             when {
                 expression {
                     return env.DEPLOY_VERSION?.trim() && env.DEPLOY_VERSION != 'dryrun' && !params.DRY_RUN &&
-                           (params.RECONCILE_GITOPS || env.GITOPS_OK == 'true')
+                           env.GITOPS_OK == 'true'
                 }
             }
 
