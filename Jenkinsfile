@@ -60,7 +60,8 @@ pipeline {
         NODE_IMAGE      = "node:24-alpine"
 
         APP_REPO_URL    = "https://github.com/tsirynajoro/fixbook-front.git"
-        GITOPS_REPO_URL = "https://github.com/tsirynajoro/fixbook-gitops.git"
+        // Depot GitOps heberge sur GitLab (proprietaire = compte bot). Remplacer CHANGE-ME par le namespace GitLab.
+        GITOPS_REPO_URL = "https://gitlab.com/TsiryNajoro/fixbook-gitops.git"
         GITOPS_APP_FILE = "frontend/kustomization.yaml"
 
         // A REMPLACER : destinataire des alertes de derive GitOps
@@ -453,7 +454,8 @@ pipeline {
                                         [ -n "$PREVIOUS" ] || PREVIOUS=none
 
                                         # 2) version actuelle dans GitOps + dernier auteur de cette ligne
-                                        export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(auth "$GITOPS_TOKEN")"
+                                        # GitLab : project access token, le nom d'utilisateur est libre (non vide)
+                                        export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf "oauth2:%s" "$GITOPS_TOKEN" | base64 | tr -d "\\n")"
                                         rm -rf gitops-repo
                                         git clone -q "${GITOPS_REPO_URL}" gitops-repo
                                         COUNT=$(grep -Ec "^[[:space:]]*newTag:" "gitops-repo/${GITOPS_APP_FILE}" || true)
@@ -565,7 +567,8 @@ pipeline {
 
                                         rm -rf gitops-repo
 
-                                        AUTH=$(printf "x-access-token:%s" "$GITOPS_TOKEN" \
+                                        # GitLab : project access token, le nom d'utilisateur est libre (non vide)
+                                        AUTH=$(printf "oauth2:%s" "$GITOPS_TOKEN" \
                                             | base64 | tr -d "\\n")
 
                                         # Config git via variables d'environnement :
@@ -602,7 +605,7 @@ pipeline {
                                         [ "$(read_tag < "${GITOPS_APP_FILE}")" = "${DEPLOY_VERSION}" ] || { echo "ERREUR : ${DEPLOY_VERSION} absent de ${GITOPS_APP_FILE} apres modification"; exit 1; }
 
                                         git config user.name  "jenkins-ci"
-                                        git config user.email "jenkins-ci@users.noreply.github.com"
+                                        git config user.email "jenkins-ci@users.noreply.gitlab.com"
                                         git add "${GITOPS_APP_FILE}"
 
                                         if git diff --cached --quiet; then
