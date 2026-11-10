@@ -61,7 +61,7 @@ pipeline {
 
         APP_REPO_URL    = "https://github.com/tsirynajoro/fixbook-front.git"
         // Depot GitOps heberge sur GitLab (proprietaire = compte bot). Remplacer CHANGE-ME par le namespace GitLab.
-        GITOPS_REPO_URL = "https://gitlab.com/TsiryNajoro/fixbook-gitops.git"
+        GITOPS_REPO_URL = "https://gitlab.com/na-group3445946/fixbook-gitops.git"
         GITOPS_APP_FILE = "frontend/kustomization.yaml"
 
         // A REMPLACER : destinataire des alertes de derive GitOps
