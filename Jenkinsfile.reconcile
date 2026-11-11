@@ -1,0 +1,179 @@
+// Reconciliation / rollback MANUEL du depot GitOps (job separe : fixbook-gitops-reconcile).
+//
+// Aligne le depot GitOps sur une release EXISTANTE de l'application, sans recreer de release :
+//   - TARGET_VERSION vide  -> derniere release (reconciliation apres un drift ou un echec de mise a jour)
+//   - TARGET_VERSION = vX.Y.Z -> cette release (rollback ciblé)
+// Decision humaine explicite : la raison est obligatoire et inscrite dans le commit GitOps,
+// avec la personne qui a lance le job. Reserve aux personnes autorisees (droits du job).
+// Contrairement au pipeline CI, un echec ici rend le build rouge : une action demandee et non faite doit se voir.
+
+def triggeredBy() {
+    def causes = currentBuild.getBuildCauses()
+    return causes ? causes.collect { it.shortDescription ?: 'inconnu' }.join(', ') : 'inconnu'
+}
+
+def notifyBuild(String subject, String body) {
+    if (!env.NOTIFY_EMAIL?.trim() || env.NOTIFY_EMAIL.contains('example.com')) {
+        echo 'NOTIFY_EMAIL non configure : aucun mail envoye.'
+        return
+    }
+    try {
+        emailext to: env.NOTIFY_EMAIL, subject: subject, body: body
+    } catch (e) {
+        echo "emailext indisponible (${e.message}), essai avec le mail simple."
+        try {
+            mail to: env.NOTIFY_EMAIL, subject: subject, body: body
+        } catch (e2) {
+            echo "Envoi du mail impossible : ${e2.message}"
+        }
+    }
+}
+
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 15, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    parameters {
+        string(
+            name: 'TARGET_VERSION',
+            defaultValue: '',
+            description: 'Version a deployer (ex. v0.0.3). Doit etre une release existante. Vide = derniere release.'
+        )
+        string(
+            name: 'REASON',
+            defaultValue: '',
+            description: 'OBLIGATOIRE : pourquoi cette modification (inscrit dans le commit GitOps).'
+        )
+    }
+
+    environment {
+        APP_NAME        = "fixbook-front"
+        IMAGE_NAME      = "ghcr.io/tsirynajoro/fixbook-front"
+        APP_REPO_URL    = "https://github.com/tsirynajoro/fixbook-front.git"
+        GITOPS_REPO_URL = "https://gitlab.com/na-group3445946/fixbook-gitops.git"
+        GITOPS_APP_FILE = "frontend/kustomization.yaml"
+        NOTIFY_EMAIL    = "rakotonirinatsirynajoro@gmail.com"
+    }
+
+    stages {
+
+        stage('Check GitOps') {
+            options { timeout(time: 5, unit: 'MINUTES') }
+
+            steps {
+                withCredentials([
+                    string(credentialsId: 'github-release-token', variable: 'APP_TOKEN'),
+                    string(credentialsId: 'gitops-update-token', variable: 'GITOPS_TOKEN')
+                ]) {
+                    script {
+                        def reason = params.REASON?.trim()
+                        def wanted = params.TARGET_VERSION?.trim()
+
+                        if (!reason) {
+                            error('REASON est obligatoire : indiquer pourquoi GitOps est modifie.')
+                        }
+                        if (wanted && !(wanted ==~ /^v\d+\.\d+\.\d+$/)) {
+                            error("TARGET_VERSION invalide : '${wanted}' (format attendu : vX.Y.Z).")
+                        }
+
+                        // gitops-check.sh verifie aussi que la version demandee est une release existante
+                        env.CHECK_TAG = wanted ?: ''
+                        def status = sh(returnStatus: true, script: 'sh scripts/gitops-check.sh')
+                        if (status != 0) {
+                            env.GITOPS_NOTE = "Controle impossible, GitOps non modifie. Derniers messages :\n${readFile('gitops-check.tail')}"
+                            error('Controle GitOps impossible.')
+                        }
+
+                        def parts = readFile('gitops-check.out').trim().split('\\|', 3)
+                        if (parts.size() != 3) {
+                            env.GITOPS_NOTE = 'Controle GitOps : resultat inattendu, GitOps non modifie.'
+                            error('Controle GitOps : resultat inattendu.')
+                        }
+                        def latest  = parts[0]
+                        def current = parts[1]
+                        if (latest == 'none') {
+                            env.GITOPS_NOTE = 'Aucune release trouvee sur le depot applicatif.'
+                            error('Aucune release trouvee.')
+                        }
+
+                        env.CURRENT_TAG = current
+                        env.TARGET      = wanted ?: latest
+                        env.GITOPS_MODE = (env.TARGET == latest) ? 'reconcile' : 'rollback'
+                        echo "Derniere release : ${latest} | GitOps : ${current} | cible : ${env.TARGET} (${env.GITOPS_MODE})"
+
+                        if (current == env.TARGET) {
+                            env.GITOPS_RESULT = 'unchanged'
+                            echo "GitOps contient deja ${env.TARGET} : rien a faire."
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update GitOps Repo') {
+            options { timeout(time: 5, unit: 'MINUTES') }
+
+            when {
+                expression { return env.TARGET?.trim() && env.GITOPS_RESULT != 'unchanged' }
+            }
+
+            steps {
+                script {
+                    // Tracabilite : ces valeurs finissent dans le message du commit GitOps
+                    env.TRIGGERED_BY   = triggeredBy()
+                    env.DEPLOY_VERSION = env.TARGET
+                }
+
+                withCredentials([
+                    string(credentialsId: 'gitops-update-token', variable: 'GITOPS_TOKEN')
+                ]) {
+                    script {
+                        def status = sh(returnStatus: true, script: 'sh scripts/gitops-update.sh')
+                        if (status != 0) {
+                            env.GITOPS_NOTE = "Mise a jour GitOps echouee, GitOps non modifie. Derniers messages :\n${readFile('gitops-update.tail')}"
+                            error('Mise a jour GitOps echouee.')
+                        }
+                        env.GITOPS_RESULT = 'updated'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                def result = currentBuild.currentResult
+
+                def gitops
+                switch (env.GITOPS_RESULT ?: '') {
+                    case 'updated':   gitops = "Mis à jour effectué : ${env.CURRENT_TAG} -> ${env.TARGET}"; break
+                    case 'unchanged': gitops = "Déjà à jour (${env.TARGET}), rien n'a été poussé"; break
+                    default:          gitops = 'Non modifié'
+                }
+
+                def lines = []
+                lines << "Statut : ${result}"
+                lines << "Application : ${env.APP_NAME}"
+                lines << "Mode : ${env.GITOPS_MODE ?: 'non déterminé'}"
+                lines << "Version demandée : ${params.TARGET_VERSION?.trim() ? params.TARGET_VERSION.trim() : 'dernière release'}"
+                lines << "Repository GitOps : ${gitops}"
+                lines << "Raison : ${params.REASON?.trim() ?: 'non précisée'}"
+                lines << "Déclenché par : ${triggeredBy()}"
+                if (env.GITOPS_NOTE?.trim()) { lines << "\n${env.GITOPS_NOTE}" }
+                lines << "\nBuild : ${env.BUILD_URL}"
+
+                def subject = "[Fixbook] GitOps ${env.APP_NAME} ${env.GITOPS_MODE ?: 'reconcile'} ${env.TARGET ?: ''} : ${result}"
+                notifyBuild(subject, lines.join('\n'))
+            }
+        }
+        cleanup {
+            sh 'rm -rf gitops-repo gitops-check.* gitops-update.* || true'
+        }
+    }
+}
