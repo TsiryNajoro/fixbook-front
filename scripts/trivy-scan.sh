@@ -5,6 +5,9 @@
 # Le cache (volume trivy-cache) rend la 2e passe rapide.
 #
 # Entrees : TRIVY_IMAGE, IMAGE_NAME, RELEASE_VERSION, WORKSPACE
+#           SCAN_TARGET (TEST UNIQUEMENT) : scanne cette image au lieu de celle du build, pour verifier
+#           le comportement en presence de vulnerabilites. Refuse hors DRY_RUN, donc sans effet possible
+#           sur une vraie release.
 # Sortie  : reports/trivy.json
 # Code de retour : 0 si aucune vulnerabilite HIGH/CRITICAL, 1 sinon.
 
@@ -14,6 +17,14 @@ set -u
 require_env TRIVY_IMAGE IMAGE_NAME RELEASE_VERSION WORKSPACE
 
 mkdir -p reports
+
+TARGET="${IMAGE_NAME}:${RELEASE_VERSION}"
+if [ -n "${SCAN_TARGET:-}" ]; then
+    [ "${DRY_RUN:-false}" = "true" ] \
+        || fail "SCAN_TARGET (variable de test) n'est autorise qu'en DRY_RUN : la retirer des variables globales de Jenkins."
+    echo "ATTENTION - TEST : scan de ${SCAN_TARGET} au lieu de ${TARGET}"
+    TARGET=$SCAN_TARGET
+fi
 
 report() {
     docker run --rm \
@@ -26,7 +37,7 @@ report() {
         --format json \
         --output "$WORKSPACE/reports/trivy.json" \
         --exit-code 0 \
-        "${IMAGE_NAME}:${RELEASE_VERSION}"
+        "$TARGET"
 }
 
 # 1) Rapport JSON. Rejouable : un echec ici est un probleme de telechargement de la base, pas un resultat de scan.
@@ -40,4 +51,4 @@ docker run --rm \
     image \
     --severity HIGH,CRITICAL \
     --exit-code 1 \
-    "${IMAGE_NAME}:${RELEASE_VERSION}"
+    "$TARGET"
