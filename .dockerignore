@@ -1,4 +1,7 @@
 node_modules
 dist
 .git
+tests/
+coverage/
+vitest.config.js
 .gitignore

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "lucide-react": "^0.383.0",
@@ -20,13 +23,19 @@
     "@semantic-release/git": "^11.0.1",
     "@semantic-release/github": "^12.0.10",
     "@semantic-release/release-notes-generator": "^14.1.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^5.1.1",
     "autoprefixer": "^10.4.19",
     "conventional-changelog-conventionalcommits": "^8.0.0",
+    "jsdom": "^31.0.1",
     "postcss": "^8.4.40",
     "semantic-release": "^25.0.9",
     "tailwindcss": "^3.4.7",
-    "vite": "^7.3.6"
+    "vite": "^7.3.6",
+    "vitest": "^5.1.1"
   },
   "overrides": {
     "@semantic-release/npm": {
