@@ -102,9 +102,9 @@ export default function Login() {
               <GoogleIcon /> Continue with Google
             </a>
           ) : (
-            <span role="status" aria-label="Google sign-in unavailable" title="Not configured on this server yet" className={oauthButtonClasses(false)}>
+            <output aria-label="Google sign-in unavailable" title="Not configured on this server yet" className={oauthButtonClasses(false)}>
               <GoogleIcon /> Continue with Google
-            </span>
+            </output>
           )}
 
           {/* {providers.microsoft ? (

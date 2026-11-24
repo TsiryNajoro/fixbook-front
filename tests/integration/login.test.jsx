@@ -75,7 +75,7 @@ describe('login flow', () => {
 
     renderLogin();
 
-    expect(await screen.findByRole('status', { name: 'Google sign-in unavailable' })).toBeTruthy();
+    expect(await screen.findByLabelText('Google sign-in unavailable')).toBeTruthy();
   });
 
   // This displays known OAuth callback errors supplied in the login URL.
