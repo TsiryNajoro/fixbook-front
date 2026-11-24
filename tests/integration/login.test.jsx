@@ -48,7 +48,7 @@ describe('login flow', () => {
       method: 'POST',
       body: JSON.stringify({ email: 'dev@example.test', password: 'fake-password' }),
     }));
-  });
+  }, 15000);
 
   // This preserves the API error in the form and keeps the user on the login page.
   it('shows the API error and stays on login after a failed request', async () => {

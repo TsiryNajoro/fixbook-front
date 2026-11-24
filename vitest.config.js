@@ -6,6 +6,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
+      pool: 'vmThreads',
       setupFiles: ['./tests/setup.js'],
       include: ['tests/**/*.test.{js,jsx}'],
       coverage: {

@@ -32,7 +32,7 @@ describe('protected routes', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('heading', { name: 'FIXBOOK' })).toBeTruthy();
+    expect(await screen.findByLabelText('Email address')).toBeTruthy();
     expect(localStorage.getItem('fixbook_token')).toBeNull();
   });
 

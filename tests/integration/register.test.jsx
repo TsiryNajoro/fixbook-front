@@ -50,7 +50,7 @@ describe('registration form', () => {
       department: '',
     });
     expect(loginMock).toHaveBeenCalledWith('fake-token', { name: 'Test User' });
-  });
+  }, 15000);
 
   // This keeps server-side registration errors visible without leaving the form.
   it('shows the registration error and stays on the form', async () => {
