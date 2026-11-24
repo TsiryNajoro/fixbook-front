@@ -100,6 +100,23 @@ pipeline {
             }
         }
 
+        stage('Unit Tests') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
+            steps {
+                sh 'sh scripts/test.sh unit'
+            }
+        }
+
+        stage('Integration Tests') {
+            options { timeout(time: 10, unit: 'MINUTES') }
+
+            steps {
+                // npm test runs the full suite and creates coverage/lcov.info for SonarQube.
+                sh 'sh scripts/test.sh integration'
+            }
+        }
+
         stage('SonarQube Analysis') {
             options { timeout(time: 10, unit: 'MINUTES') }
 
