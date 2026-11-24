@@ -64,7 +64,7 @@ export default function Login() {
           <input
             className="input w-full"
             type="email"
-            placeholder="you@company.com"
+            placeholder="hahaha@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
