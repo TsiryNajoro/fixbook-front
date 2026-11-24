@@ -56,7 +56,7 @@ export default function Login() {
 
   return (
     <div className="max-w-sm mx-auto mt-16 px-6">
-      <h1 className="font-mono text-2xl font-bold text-center mb-1">DEMO</h1>
+      <h1 className="font-mono text-2xl font-bold text-center mb-1">DEMONSTRATION</h1>
       <p className="text-center text-muted text-sm mb-8">Sign in to your team's technical memory.</p>
 
       <div className="card p-6">
