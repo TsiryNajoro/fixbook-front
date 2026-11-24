@@ -54,7 +54,7 @@ describe('display components', () => {
     const onConfirm = vi.fn();
     const user = userEvent.setup();
     render(<ConfirmDialog open title="Archive entry" withInput inputPlaceholder="Reason" onConfirm={onConfirm} onCancel={vi.fn()} />);
-    await user.type(screen.getByPlaceholderText('Reason'), 'fake reason');
+    await user.type(screen.getByLabelText('Confirmation reason'), 'fake reason');
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(onConfirm).toHaveBeenCalledWith('fake reason');

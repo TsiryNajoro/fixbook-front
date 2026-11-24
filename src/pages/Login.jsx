@@ -61,7 +61,9 @@ export default function Login() {
 
       <div className="card p-6">
         <form onSubmit={handleSubmit} className="space-y-3">
+          <label htmlFor="login-email" className="sr-only">Email address</label>
           <input
+            id="login-email"
             className="input w-full"
             type="email"
             placeholder="hahaha@company.com"
@@ -69,7 +71,9 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+          <label htmlFor="login-password" className="sr-only">Password</label>
           <input
+            id="login-password"
             className="input w-full"
             type="password"
             placeholder="Password"
@@ -77,7 +81,7 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {error && <p className="text-rust text-sm">{error}</p>}
+          {error && <p role="alert" className="text-rust text-sm">{error}</p>}
           <button
             disabled={loading}
             className="w-full bg-navy text-paper font-mono font-semibold py-2 tracking-wide"
@@ -98,7 +102,7 @@ export default function Login() {
               <GoogleIcon /> Continue with Google
             </a>
           ) : (
-            <span title="Not configured on this server yet" className={oauthButtonClasses(false)}>
+            <span role="status" aria-label="Google sign-in unavailable" title="Not configured on this server yet" className={oauthButtonClasses(false)}>
               <GoogleIcon /> Continue with Google
             </span>
           )}

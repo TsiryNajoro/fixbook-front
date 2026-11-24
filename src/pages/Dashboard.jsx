@@ -81,6 +81,7 @@ export default function Dashboard() {
         <div className="input flex-1 min-w-[200px] flex items-center gap-2">
           <Search size={16} className="text-muted shrink-0" />
           <input
+            aria-label="Search entries"
             className="bg-transparent w-full outline-none"
             placeholder='Search e.g. "database connection refused"'
             value={q}

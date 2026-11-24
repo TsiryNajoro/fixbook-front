@@ -65,6 +65,7 @@ export default function ConfirmDialog({
 
         {withInput && (
           <input
+            aria-label="Confirmation reason"
             className="input w-full mb-4"
             placeholder={inputPlaceholder}
             value={value}

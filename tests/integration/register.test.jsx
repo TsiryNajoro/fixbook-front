@@ -21,10 +21,10 @@ function renderRegister() {
 }
 
 async function fillRequiredFields(user) {
-  await user.type(screen.getByPlaceholderText('Your name'), 'Test User');
-  await user.type(screen.getByPlaceholderText('you@company.com'), 'dev@example.test');
-  await user.type(screen.getByPlaceholderText('Password'), 'fake-password');
-  await user.type(screen.getByPlaceholderText('Company name (e.g. Acme Corp)'), 'Test Workspace');
+  await user.type(screen.getByLabelText('Your name'), 'Test User');
+  await user.type(screen.getByLabelText('Email address'), 'dev@example.test');
+  await user.type(screen.getByLabelText('Password'), 'fake-password');
+  await user.type(screen.getByLabelText('Company name'), 'Test Workspace');
 }
 
 describe('registration form', () => {

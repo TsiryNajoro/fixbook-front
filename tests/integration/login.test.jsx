@@ -38,9 +38,9 @@ describe('login flow', () => {
     const user = userEvent.setup();
 
     renderLogin();
-    await user.type(screen.getByPlaceholderText('you@company.com'), 'dev@example.test');
-    await user.type(screen.getByPlaceholderText('Password'), 'fake-password');
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await user.type(screen.getByLabelText('Email address'), 'dev@example.test');
+    await user.type(screen.getByLabelText('Password'), 'fake-password');
+    await user.click(screen.getByRole('button'));
 
     expect(await screen.findByText('Signed in home')).toBeTruthy();
     expect(localStorage.getItem('fixbook_token')).toBe('fake-token');
@@ -60,12 +60,12 @@ describe('login flow', () => {
     const user = userEvent.setup();
 
     renderLogin();
-    await user.type(screen.getByPlaceholderText('you@company.com'), 'dev@example.test');
-    await user.type(screen.getByPlaceholderText('Password'), 'wrong-password');
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await user.type(screen.getByLabelText('Email address'), 'dev@example.test');
+    await user.type(screen.getByLabelText('Password'), 'wrong-password');
+    await user.click(screen.getByRole('button'));
 
-    expect(await screen.findByText('Invalid credentials')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'FIXBOOK' })).toBeTruthy();
+    expect((await screen.findByRole('alert')).textContent).toBe('Invalid credentials');
+    expect(screen.getByLabelText('Email address')).toBeTruthy();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
@@ -75,7 +75,7 @@ describe('login flow', () => {
 
     renderLogin();
 
-    expect(await screen.findByTitle('Not configured on this server yet')).toBeTruthy();
+    expect(await screen.findByRole('status', { name: 'Google sign-in unavailable' })).toBeTruthy();
   });
 
   // This displays known OAuth callback errors supplied in the login URL.
@@ -84,7 +84,7 @@ describe('login flow', () => {
 
     renderLogin('/login?error=oauth');
 
-    expect(await screen.findByText('Something went wrong signing you in. Please try again.')).toBeTruthy();
+    expect((await screen.findByRole('alert')).textContent).toBe('Something went wrong signing you in. Please try again.');
   });
 
   // This ignores unknown query errors so arbitrary URL text is never shown as an error.
@@ -93,7 +93,7 @@ describe('login flow', () => {
 
     renderLogin('/login?error=fake-unknown-error');
 
-    expect(screen.getByRole('heading', { name: 'FIXBOOK' })).toBeTruthy();
+    expect(screen.getByLabelText('Email address')).toBeTruthy();
     expect(screen.queryByText('fake-unknown-error')).toBeNull();
   });
 });

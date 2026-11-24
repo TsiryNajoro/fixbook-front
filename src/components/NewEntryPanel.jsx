@@ -73,6 +73,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
 
       <form onSubmit={handleLogIt} className="space-y-3">
         <input
+          aria-label="Entry title"
           className="input w-full text-lg font-mono"
           placeholder="Title (optional) — e.g. API returns 500 errors after deployment"
           value={title}
@@ -80,6 +81,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
           autoFocus
         />
         <textarea
+          aria-label="Entry description"
           className="input w-full"
           placeholder="What happened? * (required to log — optional for a draft)"
           rows={2}
@@ -89,6 +91,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
         <label className="flex items-start gap-2 border border-line px-2 py-1.5">
           <Terminal size={14} className="text-muted shrink-0 mt-2" />
           <textarea
+            aria-label="Entry logs"
             className="bg-transparent w-full text-sm font-mono outline-none placeholder:text-muted py-1"
             placeholder="Logs / error messages * (required to log — optional for a draft)"
             rows={2}
@@ -110,7 +113,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
           <div className="grid grid-cols-2 gap-3 pt-1">
             <label className="flex items-center gap-2 border border-line px-2 py-1.5">
               <Tag size={14} className="text-muted shrink-0" />
-              <select className="bg-transparent w-full text-sm font-mono outline-none" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <select aria-label="Entry category" className="bg-transparent w-full text-sm font-mono outline-none" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {CATEGORIES.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
@@ -119,6 +122,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
             <label className="flex items-center gap-2 border border-line px-2 py-1.5">
               <Server size={14} className="text-muted shrink-0" />
               <input
+                aria-label="Entry environment"
                 className="bg-transparent w-full text-sm font-mono outline-none placeholder:text-muted"
                 placeholder="Environment (optional)"
                 value={environment}
@@ -128,6 +132,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
             <label className="flex items-center gap-2 border border-line px-2 py-1.5 col-span-2">
               <Box size={14} className="text-muted shrink-0" />
               <input
+                aria-label="Affected application"
                 className="bg-transparent w-full text-sm font-mono outline-none placeholder:text-muted"
                 placeholder="Affected application / service (optional)"
                 value={application}
@@ -137,6 +142,7 @@ export default function NewEntryPanel({ onCreated, onCancel }) {
             <label className="flex items-center gap-2 border border-line px-2 py-1.5 col-span-2">
               <Hash size={14} className="text-muted shrink-0" />
               <input
+                aria-label="Entry tags"
                 className="bg-transparent w-full text-sm font-mono outline-none placeholder:text-muted"
                 placeholder="tags, comma, separated (optional)"
                 value={tags}

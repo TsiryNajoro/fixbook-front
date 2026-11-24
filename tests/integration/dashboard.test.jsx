@@ -75,7 +75,7 @@ describe('dashboard loading states', () => {
     const user = userEvent.setup();
     renderDashboard();
     await screen.findByText('No entries yet.');
-    await user.type(screen.getByPlaceholderText('Search e.g. "database connection refused"'), 'database down');
+    await user.type(screen.getByLabelText('Search entries'), 'database down');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/problems?q=database+down')).toBe(true);
@@ -125,8 +125,8 @@ describe('dashboard loading states', () => {
     renderDashboard();
     await screen.findByText('No entries yet.');
     await user.click(screen.getByRole('button', { name: 'New entry' }));
-    await user.type(screen.getByPlaceholderText('What happened? * (required to log — optional for a draft)'), 'fake incident');
-    await user.type(screen.getByPlaceholderText('Logs / error messages * (required to log — optional for a draft)'), 'fake log');
+    await user.type(screen.getByLabelText('Entry description'), 'fake incident');
+    await user.type(screen.getByLabelText('Entry logs'), 'fake log');
     await user.click(screen.getByRole('button', { name: 'Log it →' }));
 
     expect(await screen.findByText('Created entry detail')).toBeTruthy();

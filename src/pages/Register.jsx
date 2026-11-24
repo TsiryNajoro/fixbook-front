@@ -37,8 +37,11 @@ export default function Register() {
       </p>
       <div className="card p-6">
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input className="input w-full" placeholder="Your name" value={form.name} onChange={update('name')} required />
+          <label htmlFor="register-name" className="sr-only">Your name</label>
+          <input id="register-name" className="input w-full" placeholder="Your name" value={form.name} onChange={update('name')} required />
+          <label htmlFor="register-email" className="sr-only">Email address</label>
           <input
+            id="register-email"
             className="input w-full"
             type="email"
             placeholder="you@company.com"
@@ -46,7 +49,9 @@ export default function Register() {
             onChange={update('email')}
             required
           />
+          <label htmlFor="register-password" className="sr-only">Password</label>
           <input
+            id="register-password"
             className="input w-full"
             type="password"
             placeholder="Password"
@@ -54,14 +59,18 @@ export default function Register() {
             onChange={update('password')}
             required
           />
+          <label htmlFor="register-company" className="sr-only">Company name</label>
           <input
+            id="register-company"
             className="input w-full"
             placeholder="Company name (e.g. Acme Corp)"
             value={form.companyName}
             onChange={update('companyName')}
             required
           />
+          <label htmlFor="register-department" className="sr-only">Department or role</label>
           <input
+            id="register-department"
             className="input w-full"
             placeholder="Department / role (e.g. DevOps) — optional"
             value={form.department}

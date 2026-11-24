@@ -23,7 +23,7 @@ describe('new entry form', () => {
   it('requires a description before publishing', async () => {
     const user = userEvent.setup();
     render(<NewEntryPanel onCreated={vi.fn()} onCancel={vi.fn()} />);
-    await user.type(screen.getByPlaceholderText('Logs / error messages * (required to log — optional for a draft)'), 'fake log');
+    await user.type(screen.getByLabelText('Entry logs'), 'fake log');
     await user.click(screen.getByRole('button', { name: 'Log it →' }));
 
     expect(await screen.findByText('Description is required to log this entry.')).toBeTruthy();
@@ -34,8 +34,8 @@ describe('new entry form', () => {
   it('requires logs before publishing', async () => {
     const user = userEvent.setup();
     render(<NewEntryPanel onCreated={vi.fn()} onCancel={vi.fn()} />);
-    await user.type(screen.getByPlaceholderText('Title (optional) — e.g. API returns 500 errors after deployment'), 'Fake title');
-    await user.type(screen.getByPlaceholderText('What happened? * (required to log — optional for a draft)'), 'fake incident');
+    await user.type(screen.getByLabelText('Entry title'), 'Fake title');
+    await user.type(screen.getByLabelText('Entry description'), 'fake incident');
     await user.click(screen.getByRole('button', { name: 'Log it →' }));
 
     expect(await screen.findByText('Logs are required to log this entry.')).toBeTruthy();
@@ -47,10 +47,10 @@ describe('new entry form', () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
     render(<NewEntryPanel onCreated={onCreated} onCancel={vi.fn()} />);
-    await user.type(screen.getByPlaceholderText('What happened? * (required to log — optional for a draft)'), 'fake incident');
-    await user.type(screen.getByPlaceholderText('Logs / error messages * (required to log — optional for a draft)'), 'fake log');
+    await user.type(screen.getByLabelText('Entry description'), 'fake incident');
+    await user.type(screen.getByLabelText('Entry logs'), 'fake log');
     await user.click(screen.getByRole('button', { name: /Add category, environment, tags/ }));
-    await user.type(screen.getByPlaceholderText('tags, comma, separated (optional)'), ' api, urgent , ');
+    await user.type(screen.getByLabelText('Entry tags'), ' api, urgent , ');
     await user.click(screen.getByRole('button', { name: 'Log it →' }));
 
     expect(createProblemMock).toHaveBeenCalledWith('fake-token', expect.objectContaining({
@@ -66,13 +66,13 @@ describe('new entry form', () => {
   it('includes optional category, environment, and application details', async () => {
     const user = userEvent.setup();
     render(<NewEntryPanel onCreated={vi.fn()} onCancel={vi.fn()} />);
-    await user.type(screen.getByPlaceholderText('Title (optional) — e.g. API returns 500 errors after deployment'), 'Fake title');
-    await user.type(screen.getByPlaceholderText('What happened? * (required to log — optional for a draft)'), 'fake incident');
-    await user.type(screen.getByPlaceholderText('Logs / error messages * (required to log — optional for a draft)'), 'fake log');
+    await user.type(screen.getByLabelText('Entry title'), 'Fake title');
+    await user.type(screen.getByLabelText('Entry description'), 'fake incident');
+    await user.type(screen.getByLabelText('Entry logs'), 'fake log');
     await user.click(screen.getByRole('button', { name: /Add category, environment, tags/ }));
-    await user.selectOptions(screen.getByRole('combobox'), 'Database');
-    await user.type(screen.getByPlaceholderText('Environment (optional)'), 'test');
-    await user.type(screen.getByPlaceholderText('Affected application / service (optional)'), 'fake-service');
+    await user.selectOptions(screen.getByLabelText('Entry category'), 'Database');
+    await user.type(screen.getByLabelText('Entry environment'), 'test');
+    await user.type(screen.getByLabelText('Affected application'), 'fake-service');
     await user.click(screen.getByRole('button', { name: 'Log it →' }));
 
     expect(createProblemMock).toHaveBeenCalledWith('fake-token', expect.objectContaining({
@@ -98,8 +98,8 @@ describe('new entry form', () => {
     createProblemMock.mockRejectedValue(new Error('Create failed'));
     const user = userEvent.setup();
     render(<NewEntryPanel onCreated={vi.fn()} onCancel={vi.fn()} />);
-    await user.type(screen.getByPlaceholderText('What happened? * (required to log — optional for a draft)'), 'fake incident');
-    await user.type(screen.getByPlaceholderText('Logs / error messages * (required to log — optional for a draft)'), 'fake log');
+    await user.type(screen.getByLabelText('Entry description'), 'fake incident');
+    await user.type(screen.getByLabelText('Entry logs'), 'fake log');
     await user.click(screen.getByRole('button', { name: 'Log it →' }));
 
     expect(await screen.findByText('Create failed')).toBeTruthy();
