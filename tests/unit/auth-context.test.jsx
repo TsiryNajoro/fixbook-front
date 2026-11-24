@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../src/context/AuthContext.jsx';
 
 const { meMock } = vi.hoisted(() => ({ meMock: vi.fn() }));
@@ -32,7 +32,7 @@ describe('auth context', () => {
     render(<AuthProvider><AuthProbe /></AuthProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Start session' }));
 
-    await waitFor(() => expect(screen.getByText('Restored User')).toBeTruthy());
+    expect(await screen.findByText('Restored User')).toBeTruthy();
     expect(meMock).toHaveBeenCalledWith('fake-token');
     expect(localStorage.getItem('fixbook_token')).toBe('fake-token');
     fireEvent.click(screen.getByRole('button', { name: 'End session' }));
@@ -46,7 +46,7 @@ describe('auth context', () => {
   it('updates the current user in context', async () => {
     render(<AuthProvider><AuthProbe /></AuthProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Start session' }));
-    await waitFor(() => expect(screen.getByText('Restored User')).toBeTruthy());
+    expect(await screen.findByText('Restored User')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Update profile' }));
 
     expect(screen.getByText('Updated User')).toBeTruthy();
